@@ -1,0 +1,22 @@
+-- Table to store ETL job records
+CREATE TABLE IF NOT EXISTS etl_jobs (
+    job_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_name TEXT NOT NULL,
+    source TEXT NOT NULL,
+    destination TEXT NOT NULL,
+    records_extracted INTEGER DEFAULT 0,
+    records_transformed INTEGER DEFAULT 0,
+    records_loaded INTEGER DEFAULT 0,
+    status TEXT CHECK(status IN ('Pending', 'Running', 'Success', 'Failed')) NOT NULL DEFAULT 'Pending',
+    start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    end_time DATETIME
+);
+
+-- Optional: Table for detailed ETL logs
+CREATE TABLE IF NOT EXISTS etl_logs (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id INTEGER NOT NULL,
+    log_message TEXT NOT NULL,
+    log_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(job_id) REFERENCES etl_jobs(job_id)
+);
