@@ -1,0 +1,26 @@
+-- 1. Create table
+CREATE TABLE goals (
+    goal_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    goal_title TEXT NOT NULL,
+    task_description TEXT,
+    deadline DATE NOT NULL,
+    status TEXT CHECK(status IN ('Not Started', 'In Progress', 'Completed')) NOT NULL,
+    feedback TEXT
+);
+
+-- 2. Insert a new goal (CREATE)
+INSERT INTO goals (goal_title, task_description, deadline, status, feedback)
+VALUES ('Increase Sales', 'Reach 20% growth', '2025-12-31', 'In Progress', 'On track');
+
+-- 3. Read all goals (READ)
+SELECT * FROM goals;
+
+-- 4. Update an existing goal (UPDATE)
+UPDATE goals
+SET status = 'Completed',
+    feedback = 'Well executed'
+WHERE goal_id = 1;
+
+-- 5. Delete a goal (DELETE)
+DELETE FROM goals
+WHERE goal_id = 1;
