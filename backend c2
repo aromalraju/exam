@@ -1,0 +1,77 @@
+import psycopg2
+import pandas as pd
+
+# Database connection settings (updated to 'event')
+DB_CONFIG = {
+    "dbname": "evimport psycopg2
+import pandas as pd
+
+# Database connection settings (change password and port if needed)
+DB_CONFIG = {
+    "dbname": "eventdb",
+    "user": "postgres",
+    "password": "yourpassword",  # replace with your PostgreSQL password
+    "host": "localhost",
+    "port": "5433"              # update if needed
+}
+
+def get_connection():
+    """Create a PostgreSQL connection."""
+    return psycopg2.connect(**DB_CONFIG)
+
+def fetch_dataframe(query, params=None):
+    """Run SELECT query and return as pandas DataFrame."""
+    conn = get_connection()
+    try:
+        return pd.read_sql_query(query, conn, params=params)
+    finally:
+        conn.close()
+
+def execute_query(query, params=None):
+    """Run INSERT, UPDATE, DELETE queries safely."""
+    # Convert numpy types to native Python
+    if params:
+        params = tuple(
+            int(p) if isinstance(p, (pd.Int64Dtype().type, pd.Series, pd.NA, pd.Timestamp)) else
+            float(p) if isinstance(p, (pd.Float64Dtype().type,)) else
+            str(p) if isinstance(p, pd.Timestamp) else
+            p
+            for p in params
+        )
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(query, params)
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+entdb",          # updated database name
+    "user": "postgres",         
+    "password": "0452",  # replace with your real PostgreSQL password
+    "host": "localhost",
+    "port": "5433"              # update if your PostgreSQL uses different port
+}
+
+def get_connection():
+    """Create a PostgreSQL connection."""
+    return psycopg2.connect(**DB_CONFIG)
+
+def fetch_dataframe(query, params=None):
+    """Run SELECT query and return as DataFrame."""
+    conn = get_connection()
+    try:
+        return pd.read_sql_query(query, conn, params=params)
+    finally:
+        conn.close()
+
+def execute_query(query, params=None):
+    """Run INSERT, UPDATE, DELETE queries."""
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(query, params)
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
