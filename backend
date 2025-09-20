@@ -1,0 +1,97 @@
+import psycopg2
+from psycopg2 import sql
+import streamlit as st
+import uuid
+
+# Function to establish a database connection
+@st.cache_resource
+def get_db_connection():
+    """Establishes a connection to the PostgreSQL database."""
+    conn = psycopg2.connect(
+        host="localhost",
+        database="expensetracker",
+        user="postgres",
+        password="0452",
+        port="5433"
+    )
+    return conn
+
+# --- CRUD Operations ---
+def create_transaction(transaction_date, description, amount, transaction_type):
+    """
+    Inserts a new transaction into the database.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        transaction_id = str(uuid.uuid4())
+        insert_query = sql.SQL("""
+            INSERT INTO transactions (transaction_id, transaction_date, description, amount, type)
+            VALUES (%s, %s, %s, %s, %s)
+        """)
+        cur.execute(insert_query, (transaction_id, transaction_date, description, amount, transaction_type))
+        conn.commit()
+        return True
+    except Exception as e:
+        st.error(f"Error creating transaction: {e}")
+        conn.rollback()
+        return False
+    finally:
+        cur.close()
+
+def read_transactions(transaction_type=None, sort_column='transaction_date', sort_order='DESC'):
+    """
+    Fetches all transactions from the database with optional filtering and sorting.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # Start with the base query
+        if transaction_type:
+            query = sql.SQL("SELECT * FROM transactions WHERE type = %s")
+            params = [transaction_type]
+        else:
+            query = sql.SQL("SELECT * FROM transactions")
+            params = []
+
+        # Add sorting clause using sql.SQL composition
+        query += sql.SQL(" ORDER BY ") + sql.Identifier(sort_column) + sql.SQL(" ") + sql.SQL(sort_order)
+
+        cur.execute(query, tuple(params))
+        transactions = cur.fetchall()
+        column_names = [desc[0] for desc in cur.description]
+        return transactions, column_names
+
+    finally:
+        cur.close()
+
+# --- Aggregation and Insights ---
+def get_metrics():
+    """
+    Calculates key metrics (total transactions, total revenue, total expense)
+    and business insights (net income).
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # Total number of transactions
+        cur.execute("SELECT COUNT(*) FROM transactions")
+        total_transactions = cur.fetchone()[0]
+
+        # Total Revenue
+        cur.execute("SELECT SUM(amount) FROM transactions WHERE type = 'Revenue'")
+        total_revenue = cur.fetchone()[0] or 0
+
+        # Total Expense
+        cur.execute("SELECT SUM(amount) FROM transactions WHERE type = 'Expense'")
+        total_expense = cur.fetchone()[0] or 0
+
+        # Net Income
+        net_income = total_revenue - total_expense
+
+        return total_transactions, total_revenue, total_expense, net_income
+
+    finally:
+        cur.close()
