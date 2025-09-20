@@ -1,0 +1,99 @@
+import streamlit as st
+import pandas as pd
+from datetime import date
+
+# --- Application Configuration ---
+st.set_page_config(layout="wide")
+st.title("📊 Performance Management System")
+st.markdown("### A quick overview of the company's goals and progress.")
+
+# --- Initialize session state ---
+if "goals" not in st.session_state:
+    st.session_state.goals = pd.DataFrame({
+        "Goal Title": ["Increase Sales", "Improve Customer Service", "Launch New Product"],
+        "Task Description": ["Reach 20% growth", "Implement feedback system", "Complete launch by Q3"],
+        "Deadline": ["2025-12-31", "2025-10-15", "2025-09-30"],
+        "Status": ["In Progress", "Not Started", "Completed"],
+        "Feedback": ["On track", "", "Well executed"]
+    })
+
+# --- Performance Overview Metrics ---
+st.header("Performance Overview")
+total_goals = len(st.session_state.goals)
+goals_in_progress = (st.session_state.goals["Status"] == "In Progress").sum()
+completed_goals = (st.session_state.goals["Status"] == "Completed").sum()
+pending_feedback = (st.session_state.goals["Feedback"] == "").sum()
+
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric(label="Goal & Task Setting", value=total_goals)
+with col2:
+    st.metric(label="Progress Tracking", value=goals_in_progress)
+with col3:
+    st.metric(label="Feedback", value=pending_feedback)
+with col4:
+    st.metric(label="Reporting (Completed)", value=completed_goals)
+
+st.divider()
+
+# --- Goal/Task Entry Form ---
+st.header("Add New Goal / Task")
+with st.form(key='goal_form', clear_on_submit=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        goal_title = st.text_input("Goal Title")
+        deadline = st.date_input("Deadline", min_value=date.today())
+    with col2:
+        task_description = st.text_area("Task Description")
+        status = st.selectbox("Status", options=["Not Started", "In Progress", "Completed"])
+    
+    feedback = st.text_input("Manager Feedback (optional)")
+    
+    submit_button = st.form_submit_button(label="Add Goal / Task")
+
+    if submit_button:
+        new_goal = {
+            "Goal Title": goal_title,
+            "Task Description": task_description,
+            "Deadline": str(deadline),
+            "Status": status,
+            "Feedback": feedback
+        }
+        st.session_state.goals = pd.concat([st.session_state.goals, pd.DataFrame([new_goal])], ignore_index=True)
+        st.success(f"Goal **{goal_title}** added successfully!")
+
+st.divider()
+
+# --- Display Goals/Tasks ---
+st.header("Goals & Tasks Overview")
+
+if not st.session_state.goals.empty:
+    for idx, row in st.session_state.goals.iterrows():
+        with st.expander(f"🎯 {row['Goal Title']}"):
+            st.write(f"**Task:** {row['Task Description']}")
+            st.write(f"**Deadline:** {row['Deadline']}")
+            st.write(f"**Status:** {row['Status']}")
+            st.write(f"**Feedback:** {row['Feedback']}")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(f"✏️ Update Goal {idx}", key=f"update_{idx}"):
+                    with st.form(f"update_form_{idx}"):
+                        new_title = st.text_input("Goal Title", value=row["Goal Title"])
+                        new_task = st.text_area("Task Description", value=row["Task Description"])
+                        new_deadline = st.date_input("Deadline", value=pd.to_datetime(row["Deadline"]))
+                        new_status = st.selectbox("Status", ["Not Started", "In Progress", "Completed"],
+                                                  index=["Not Started", "In Progress", "Completed"].index(row["Status"]))
+                        new_feedback = st.text_input("Manager Feedback", value=row["Feedback"])
+                        save_btn = st.form_submit_button("Save Changes")
+                        if save_btn:
+                            st.session_state.goals.loc[idx] = [new_title, new_task, str(new_deadline), new_status, new_feedback]
+                            st.success("✅ Goal updated successfully!")
+
+            with col2:
+                if st.button(f"🗑️ Delete Goal {idx}", key=f"delete_{idx}"):
+                    st.session_state.goals = st.session_state.goals.drop(idx).reset_index(drop=True)
+                    st.warning(f"Goal **{row['Goal Title']}** deleted!")
+                    st.experimental_rerun()
+else:
+    st.info("No goals available. Add some to get started!")
